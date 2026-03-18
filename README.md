@@ -1,6 +1,6 @@
 # TanStack Start + Cloudflare Workers + WebSocket RPC
 
-A reference starter that runs [TanStack Start](https://tanstack.com/start) on [Cloudflare Workers](https://developers.cloudflare.com/workers/) with all server communication routed over a single persistent WebSocket connection using [capnweb](https://github.com/niccolozy/capnweb) RPC.
+A reference starter that runs [TanStack Start](https://tanstack.com/start) on [Cloudflare Workers](https://developers.cloudflare.com/workers/) with all server communication routed over a single persistent WebSocket connection using [capnweb](https://github.com/cloudflare/capnweb) RPC.
 
 Both TanStack Start **server functions** (`createServerFn`) and custom **worker RPC methods** share the same WebSocket, with automatic fallback to HTTP when the socket is unavailable.
 
