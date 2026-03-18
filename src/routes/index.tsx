@@ -5,7 +5,7 @@ export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-svh bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       {/* Hero */}
       <section className="relative py-20 px-6 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10" />
