@@ -6,13 +6,16 @@
  * Provides:
  * - Auto-connecting WebSocket with reconnect
  * - capnweb RPC session layered on the socket
- * - Patched globalThis.fetch to route same-origin requests over WebSocket
+ * - wsFetch: a custom fetch that routes same-origin requests over WebSocket
+ *   (injected into TanStack Start via createStart's serverFns.fetch option)
  * - Reactive status for UI (useSyncExternalStore-compatible)
  */
 
-import { newWebSocketRpcSession, type RpcStub } from 'capnweb'
+import { newWebSocketRpcSession, type RpcStub } from 'capnweb-experimental-hibernation'
 import { recordTransport } from './transport-log'
 import type { DemoApi } from './demo-rpc'
+import type { CounterApi } from './do/shared-counter'
+import type { GuestbookApi } from './do/shared-guestbook'
 
 export type WsStatus = 'connected' | 'connecting' | 'disconnected'
 
@@ -23,6 +26,10 @@ export type WsStatus = 'connected' | 'connecting' | 'disconnected'
  */
 export interface ServerApi extends DemoApi {
   fetch(request: Request): Response
+  connectCounter(roomId: string): CounterApi
+  connectGuestbook(roomId: string): GuestbookApi
+  getCounterInstanceId(roomId: string): string
+  getGuestbookInstanceId(roomId: string): string
 }
 
 let ws: WebSocket | null = null
@@ -88,28 +95,10 @@ export function getRpc(): RpcStub<ServerApi> | null {
   return rpc
 }
 
-/** Start the connection and patch global fetch. Call once from your app's client entry. */
+/** Start the connection. Call once from your app's client entry. */
 export function initSocket(): void {
   if (typeof window !== 'undefined') {
     connect()
-    patchGlobalFetch()
-  }
-}
-
-const nativeFetch = globalThis.fetch
-
-function patchGlobalFetch() {
-  globalThis.fetch = async (input, init) => {
-    const request = new Request(input, init)
-    const isSameOrigin = request.url.startsWith(window.location.origin)
-
-    if (rpc && isSameOrigin) {
-      recordTransport('websocket', request.url)
-      return rpc.fetch(request)
-    }
-
-    recordTransport('http', request.url)
-    return nativeFetch(input, init)
   }
 }
 
@@ -117,6 +106,9 @@ function patchGlobalFetch() {
  * Custom fetch that routes requests over the WebSocket RPC connection
  * instead of making a new HTTP request. Falls back to native fetch
  * if the WebSocket isn't connected.
+ *
+ * Injected into TanStack Start via createStart's serverFns.fetch option —
+ * no globalThis.fetch patching needed.
  */
 export const wsFetch: typeof globalThis.fetch = async (input, init) => {
   if (rpc) {
@@ -126,7 +118,7 @@ export const wsFetch: typeof globalThis.fetch = async (input, init) => {
   }
   const request = new Request(input, init)
   recordTransport('http', request.url)
-  return nativeFetch(input, init)
+  return fetch(input, init)
 }
 
 /** useSyncExternalStore-compatible snapshot. */

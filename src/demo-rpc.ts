@@ -3,7 +3,7 @@
  * These extend the core RpcRoot with fun examples.
  */
 
-import { RpcTarget } from 'capnweb'
+import { RpcTarget } from 'capnweb-experimental-hibernation'
 
 // ── Color name data ──
 

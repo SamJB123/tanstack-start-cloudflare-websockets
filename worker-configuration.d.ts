@@ -3,6 +3,8 @@
 // Runtime types generated with workerd@1.20260317.1 2025-09-02 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
+		SHARED_COUNTER: DurableObjectNamespace;
+		SHARED_GUESTBOOK: DurableObjectNamespace;
 	}
 }
 interface Env extends Cloudflare.Env {}

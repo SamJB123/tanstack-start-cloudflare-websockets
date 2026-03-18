@@ -5,14 +5,32 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "tanstack-start-cloudflare-websockets",
-	"compatibility_date": "2025-09-02",
+	"compatibility_date": "2026-03-17",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
 	"main": "server-entry.ts",
 	"observability": {
 		"enabled": true
-	}
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "SHARED_COUNTER",
+				"class_name": "SharedCounterDO"
+			},
+			{
+				"name": "SHARED_GUESTBOOK",
+				"class_name": "SharedGuestbookDO"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["SharedCounterDO", "SharedGuestbookDO"]
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

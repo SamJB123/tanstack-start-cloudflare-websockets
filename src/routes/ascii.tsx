@@ -167,7 +167,7 @@ function AsciiPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pt-20 px-6 pb-12">
+    <div className="min-h-svh bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pt-20 px-6 pb-12">
       {/* Hero */}
       <div className="flex flex-col items-center mb-12">
         <Terminal className="w-16 h-16 text-cyan-400 mb-4" />
