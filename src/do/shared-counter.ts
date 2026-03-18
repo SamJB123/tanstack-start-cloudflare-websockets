@@ -93,11 +93,7 @@ export class SharedCounterDO extends DurableObject {
   private async init() {
     this.count = ((await this.ctx.storage.get('count')) as number) ?? 0
     for (const ws of this.ctx.getWebSockets('capnweb')) {
-      try {
-        await this.attachSession(ws)
-      } catch (e) {
-        this.#handleSessionError('[SharedCounterDO] init', ws, e)
-      }
+      await this.attachSession(ws)
     }
   }
 
@@ -143,12 +139,8 @@ export class SharedCounterDO extends DurableObject {
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
     await this.ready
-    try {
-      const session = await this.getOrAttachSession(ws)
-      session.handleMessage(message)
-    } catch (e) {
-      this.#handleSessionError('[SharedCounterDO] webSocketMessage', ws, e)
-    }
+    const session = await this.getOrAttachSession(ws)
+    session?.handleMessage(message)
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
@@ -164,32 +156,6 @@ export class SharedCounterDO extends DurableObject {
     const sid = this.getSessionId(ws)
     const session = sid ? this.sessions.get(sid) : undefined
     session?.handleError(error)
-  }
-
-  #handleSessionError(context: string, ws: WebSocket, e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e)
-    if (msg.includes('no such entry on exports table')) {
-      const attachment = (ws as any).deserializeAttachment?.()
-      console.warn(`${context}: stale session references a disconnected client's exports.`, {
-        error: msg,
-        sessionId: attachment?.sessionId ?? null,
-        hasSnapshot: !!attachment?.snapshot,
-        snapshotExports: attachment?.snapshot?.exports?.map((exp: any) => ({
-          id: exp.id,
-          refcount: exp.refcount,
-          hasProvenance: !!exp.provenance,
-        })) ?? [],
-        snapshotImports: attachment?.snapshot?.imports?.map((imp: any) => ({
-          id: imp.id,
-          remoteRefcount: imp.remoteRefcount,
-        })) ?? [],
-        importReplayCount: attachment?.snapshot?.importReplays?.length ?? 0,
-        totalWebSockets: this.ctx.getWebSockets('capnweb').length,
-      })
-    } else {
-      console.warn(`${context}: unexpected error:`, msg)
-    }
-    try { ws.close(1011, 'stale session') } catch {}
   }
 
   private async getOrAttachSession(ws: WebSocket) {
@@ -209,7 +175,9 @@ export class SharedCounterDO extends DurableObject {
         onSendError(err) { return err },
       },
     )
-    this.sessions.set(session.sessionId, session)
+    if (session) {
+      this.sessions.set(session.sessionId, session)
+    }
     return session
   }
 
