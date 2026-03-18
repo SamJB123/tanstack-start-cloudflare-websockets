@@ -33,8 +33,8 @@ importers:
         specifier: ^1.166.13
         version: 1.166.13(@tanstack/react-router@1.167.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
       capnweb-experimental-hibernation:
-        specifier: ^0.6.2
-        version: 0.6.2
+        specifier: ^0.6.3
+        version: 0.6.3
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -1411,8 +1411,8 @@ packages:
   caniuse-lite@1.0.30001780:
     resolution: {integrity: sha512-llngX0E7nQci5BPJDqoZSbuZ5Bcs9F5db7EtgfwBerX9XGtkkiO4NwfDDIRzHTTwcYC8vC7bmeUEPGrKlR/TkQ==}
 
-  capnweb-experimental-hibernation@0.6.2:
-    resolution: {integrity: sha512-WFF6sDVPZADxdLdXeAJ8pWayJMHonSA/9SCit7tp3dMkYJLKNkR0yanPpFc/NEijffNEZDGpIMttH+R77hDISw==}
+  capnweb-experimental-hibernation@0.6.3:
+    resolution: {integrity: sha512-ODCCw6elmbfD2krIBH2qisvMj6TPQCd2HM3L96WTdkJ3+rAOn7L4dhEBA8aSLluJIZCPEAFyrpYSkoE+WajcvA==}
 
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
@@ -3473,7 +3473,7 @@ snapshots:
 
   caniuse-lite@1.0.30001780: {}
 
-  capnweb-experimental-hibernation@0.6.2: {}
+  capnweb-experimental-hibernation@0.6.3: {}
 
   chai@6.2.2: {}
 
