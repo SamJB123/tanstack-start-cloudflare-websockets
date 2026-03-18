@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MultiplexingRouteImport } from './routes/multiplexing'
 import { Route as DiceRouteImport } from './routes/dice'
 import { Route as ColorsRouteImport } from './routes/colors'
 import { Route as AsciiRouteImport } from './routes/ascii'
 import { Route as IndexRouteImport } from './routes/index'
 
+const MultiplexingRoute = MultiplexingRouteImport.update({
+  id: '/multiplexing',
+  path: '/multiplexing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiceRoute = DiceRouteImport.update({
   id: '/dice',
   path: '/dice',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/ascii': typeof AsciiRoute
   '/colors': typeof ColorsRoute
   '/dice': typeof DiceRoute
+  '/multiplexing': typeof MultiplexingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascii': typeof AsciiRoute
   '/colors': typeof ColorsRoute
   '/dice': typeof DiceRoute
+  '/multiplexing': typeof MultiplexingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/ascii': typeof AsciiRoute
   '/colors': typeof ColorsRoute
   '/dice': typeof DiceRoute
+  '/multiplexing': typeof MultiplexingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ascii' | '/colors' | '/dice'
+  fullPaths: '/' | '/ascii' | '/colors' | '/dice' | '/multiplexing'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ascii' | '/colors' | '/dice'
-  id: '__root__' | '/' | '/ascii' | '/colors' | '/dice'
+  to: '/' | '/ascii' | '/colors' | '/dice' | '/multiplexing'
+  id: '__root__' | '/' | '/ascii' | '/colors' | '/dice' | '/multiplexing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   AsciiRoute: typeof AsciiRoute
   ColorsRoute: typeof ColorsRoute
   DiceRoute: typeof DiceRoute
+  MultiplexingRoute: typeof MultiplexingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/multiplexing': {
+      id: '/multiplexing'
+      path: '/multiplexing'
+      fullPath: '/multiplexing'
+      preLoaderRoute: typeof MultiplexingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dice': {
       id: '/dice'
       path: '/dice'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AsciiRoute: AsciiRoute,
   ColorsRoute: ColorsRoute,
   DiceRoute: DiceRoute,
+  MultiplexingRoute: MultiplexingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 
 import { useState } from 'react'
-import { Home, Menu, X, Dices, Palette, Terminal } from 'lucide-react'
+import { Home, Menu, X, Dices, Palette, Terminal, Users } from 'lucide-react'
 import WsStatusIndicator from './WsStatus'
 import TransportIndicator from './TransportIndicator'
 
@@ -98,6 +98,18 @@ export default function Header() {
           >
             <Terminal size={20} />
             <span className="font-medium">ASCII Zoo</span>
+          </Link>
+          <Link
+            to="/multiplexing"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <Users size={20} />
+            <span className="font-medium">DO Multiplexing</span>
           </Link>
         </nav>
       </aside>

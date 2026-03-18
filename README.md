@@ -57,6 +57,94 @@ These bypass TanStack Start entirely — capnweb handles serialization, dispatch
 - Reconnects automatically on disconnect (1s delay)
 - Falls back to native HTTP when the socket isn't connected
 
+## Durable Object multiplexing with hibernation
+
+The `/multiplexing` route demonstrates how to proxy capnweb RPC connections from the browser through the worker to multiple Durable Objects, with full hibernation support. The DOs can sleep between interactions, wake on demand, and the RPC stubs the client holds continue to work seamlessly.
+
+### Architecture
+
+```
+Browser                    Worker                     Durable Objects
+──────                     ──────                     ───────────────
+
+                       ┌──────────────┐
+                       │  CoreRpcRoot  │
+                       │              │       capnweb RPC
+  capnweb RPC          │  #doRoots ───┼──── WebSocket ────► SharedCounterDO
+  over WebSocket       │   (kept      │                     ├─ CounterRpcRoot
+├─────────────────────►│    alive)    │                     │   .getCounter()
+│                      │              │       capnweb RPC   │   .getInstanceId()
+│  client gets child   │  #doRoots ───┼──── WebSocket ────► │
+│  capability stubs    │              │                     SharedGuestbookDO
+│  proxied through     │              │                     ├─ GuestbookRpcRoot
+│  the worker          └──────────────┘                     │   .getGuestbook()
+│                                                           │   .getInstanceId()
+│
+│  counter.increment()  ──►  worker proxies  ──►  CounterCapability.increment()
+│  guestbook.post(...)  ──►  worker proxies  ──►  GuestbookCapability.post(...)
+```
+
+### The pattern
+
+This follows the same approach used in the [capnweb hibernation tests](https://github.com/niccolozy/capnweb), where a client holds a root stub and acquires child capability stubs from it. The difference here is that the **worker** is the client to the DO, and the browser client receives the child stubs proxied through the worker.
+
+**1. DO exposes a root with child capabilities**
+
+The DO's RPC root doesn't expose the API directly. Instead, it has a method that returns a child `RpcTarget`:
+
+```ts
+class CounterRpcRoot extends RpcTarget {
+  getCounter() {
+    return new CounterCapability(this.host)
+  }
+  getInstanceId() {
+    return this.host.instanceId
+  }
+}
+```
+
+The DO uses `__experimental_newHibernatableWebSocketRpcSession` so it can hibernate while WebSocket connections remain open.
+
+**2. Worker holds root stubs, passes child stubs to the client**
+
+The worker opens a WebSocket to each DO and creates a capnweb session. It keeps the root stub alive (preventing session shutdown) and calls methods on it to get child capability stubs:
+
+```ts
+class CoreRpcRoot extends RpcTarget {
+  #doRoots = new Map<string, RpcStub<any>>()
+
+  async connectCounter(roomId: string) {
+    const root = await this.#getDoRoot<CounterRootApi>(
+      workerEnv!.SHARED_COUNTER, roomId, `counter:${roomId}`,
+    )
+    return root.getCounter()  // child stub, proxied to client
+  }
+}
+```
+
+capnweb automatically proxies the child stub across the client-worker session. When the browser client calls `counter.increment()`, the call flows: browser → worker → DO.
+
+**3. Browser client uses stubs transparently**
+
+```ts
+const counter = await rpc.connectCounter('demo-room')
+await counter.subscribe(new Handler())
+const result = await counter.increment()
+```
+
+The client doesn't know or care that calls are being proxied through the worker to a DO.
+
+### Why this pattern matters
+
+- **Hibernation works**: The DO can sleep between interactions. When it wakes, the constructor re-runs (generating a new `instanceId`), but the capnweb session restores from the WebSocket attachment and held stubs continue to work.
+- **No manual bridging**: Unlike raw WebSocket approaches where you'd manually frame messages and translate between protocols, capnweb handles serialization, dispatch, and cross-session proxying automatically.
+- **Multiplexed**: A single browser WebSocket to the worker fans out to multiple DO WebSocket connections. Each DO is independent and can hibernate on its own schedule.
+- **Bidirectional**: DOs can push to clients via callbacks (e.g., `subscribe(callback)` for real-time counter updates and guestbook entries).
+
+### Hibernation detection
+
+Each DO generates a `crypto.randomUUID()` as `instanceId` in its constructor. The UI shows this ID — when it changes between interactions, you know the DO hibernated and woke up. The `/multiplexing` page displays this with a confetti celebration when a wake-up is detected.
+
 ## Demo pages
 
 Each demo page showcases both transport types side by side, with transport badges showing whether each call went over WebSocket or HTTP and the round-trip latency.
@@ -66,6 +154,7 @@ Each demo page showcases both transport types side by side, with transport badge
 | `/dice` | Compute roll statistics on the server | Roll dice on the worker |
 | `/ascii` | Fetch animal facts | Render ASCII art banners |
 | `/colors` | Analyze color properties (hue, saturation, lightness) | Generate creative color names |
+| `/multiplexing` | — | Shared counter + guestbook via two Durable Objects with hibernation |
 
 ## Project structure
 
@@ -83,6 +172,10 @@ src/
     dice.tsx             Dice roller demo
     ascii.tsx            ASCII art zoo demo
     colors.tsx           Color palette demo
+    multiplexing.tsx     DO multiplexing demo (counter + guestbook)
+  do/
+    shared-counter.ts    SharedCounterDO with hibernatable capnweb RPC
+    shared-guestbook.ts  SharedGuestbookDO with hibernatable capnweb RPC
   components/
     Header.tsx           Nav header with WebSocket status indicator
     TransportBadge.tsx   Badge showing transport type + latency
