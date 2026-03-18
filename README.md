@@ -98,7 +98,7 @@ sequenceDiagram
 
 ### The pattern
 
-This follows the same approach used in the [capnweb hibernation tests](https://github.com/niccolozy/capnweb), where a client holds a root stub and acquires child capability stubs from it. The difference here is that the **worker** is the client to the DO, and the browser client receives the child stubs proxied through the worker.
+This follows the same approach used in the [capnweb hibernation tests]([https://github.com/niccolozy/capnweb](https://github.com/SamJB123/capnweb-experiments/tree/hibernation)), where a client holds a root stub and acquires child capability stubs from it. The difference here is that the **worker** is the client to the DO, and the browser client receives the child stubs proxied through the worker.
 
 **1. DO exposes a root with child capabilities**
 
