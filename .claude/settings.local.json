@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find C:/Users/sambi/Github/router -name server-entry* -not -path */node_modules/*)",
+      "Bash(find C:/Users/sambi/Github/router -path */cloudflare* -name *.ts -not -path */node_modules/*)",
+      "Bash(find C:/Users/sambi/Github/router -name wrangler* -not -path */node_modules/*)",
+      "Bash(find C:/Users/sambi/Github/router/examples/react/start-basic-cloudflare -name *.ts -o -name *.tsx)",
+      "Bash(find C:/Users/sambi/Github/router/e2e/react-start/basic-cloudflare -name *.ts -o -name *.tsx)"
     ]
   }
 }

@@ -26,14 +26,7 @@ export interface CounterResult {
   instanceId: string
 }
 
-export interface CounterApi {
-  getCount(): CounterResult
-  increment(): CounterResult
-  decrement(): CounterResult
-  subscribe(callback: CounterCallback): void
-}
-
-class CounterCapability extends RpcTarget implements CounterApi {
+export class CounterCapability extends RpcTarget {
   constructor(private host: SharedCounterDO) {
     super()
   }
@@ -65,12 +58,7 @@ class CounterCapability extends RpcTarget implements CounterApi {
 
 // ── DO RPC root (matches demo's RootTarget pattern) ──
 
-export interface CounterRootApi {
-  getCounter(): CounterApi
-  getInstanceId(): string
-}
-
-class CounterRpcRoot extends RpcTarget implements CounterRootApi {
+export class CounterRpcRoot extends RpcTarget {
   constructor(private host: SharedCounterDO) {
     super()
   }

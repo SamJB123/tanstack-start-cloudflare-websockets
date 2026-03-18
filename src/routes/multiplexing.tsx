@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { Hash, Smile, Users } from 'lucide-react'
-import { getRpc } from '../ws'
+import { getRpc, getStatusSnapshot, subscribeStatus } from '../ws'
 import { RpcTarget } from 'capnweb-experimental-hibernation'
 import type { RpcStub } from 'capnweb-experimental-hibernation'
-import type { CounterApi, CounterCallback } from '../do/shared-counter'
-import type { ReactionBoardApi, ReactionBoardCallback, Reaction } from '../do/shared-guestbook'
+import type { CounterCapability, CounterCallback } from '../do/shared-counter'
+import type { ReactionBoardCapability, ReactionBoardCallback, Reaction } from '../do/shared-guestbook'
 
 export const Route = createFileRoute('/multiplexing')({ component: MultiplexingPage })
 
@@ -43,7 +43,12 @@ function useSharedCounter() {
   const [count, setCount] = useState<number | null>(null)
   const [connected, setConnected] = useState(false)
   const [instanceId, setInstanceId] = useState<string | null>(null)
-  const counterRef = useRef<RpcStub<CounterApi> | null>(null)
+  const counterRef = useRef<RpcStub<CounterCapability> | null>(null)
+
+  const disconnect = useCallback(() => {
+    counterRef.current = null
+    setConnected(false)
+  }, [])
 
   const connect = useCallback(async () => {
     const rpc = getRpc()
@@ -73,7 +78,7 @@ function useSharedCounter() {
       const result = await counterRef.current.increment()
       setCount(result.count)
       setInstanceId(result.instanceId)
-    } catch (e) {
+    } catch (e: any) {
       console.error('[multiplexing] increment failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
@@ -84,12 +89,12 @@ function useSharedCounter() {
       const result = await counterRef.current.decrement()
       setCount(result.count)
       setInstanceId(result.instanceId)
-    } catch (e) {
+    } catch (e: any) {
       console.error('[multiplexing] decrement failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
-  return { count, connected, instanceId, connect, increment, decrement }
+  return { count, connected, instanceId, connect, disconnect, increment, decrement }
 }
 
 // ── Reaction board hook ──
@@ -98,7 +103,12 @@ function useReactionBoard() {
   const [reactions, setReactions] = useState<Reaction[]>([])
   const [connected, setConnected] = useState(false)
   const [instanceId, setInstanceId] = useState<string | null>(null)
-  const boardRef = useRef<RpcStub<ReactionBoardApi> | null>(null)
+  const boardRef = useRef<RpcStub<ReactionBoardCapability> | null>(null)
+
+  const disconnect = useCallback(() => {
+    boardRef.current = null
+    setConnected(false)
+  }, [])
 
   const connect = useCallback(async () => {
     const rpc = getRpc()
@@ -122,7 +132,7 @@ function useReactionBoard() {
 
       await board.subscribe(new Handler())
       setConnected(true)
-    } catch (e) {
+    } catch (e: any) {
       console.error('[multiplexing] reaction board connect failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
@@ -133,12 +143,12 @@ function useReactionBoard() {
       const name = getOrCreateName()
       const result = await boardRef.current.react(name, emoji)
       setInstanceId(result.instanceId)
-    } catch (e) {
+    } catch (e: any) {
       console.error('[multiplexing] react failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
-  return { reactions, connected, instanceId, connect, react }
+  return { reactions, connected, instanceId, connect, disconnect, react }
 }
 
 // ── Confetti burst ──
@@ -229,18 +239,17 @@ function MultiplexingPage() {
   const board = useReactionBoard()
   const reactionsEndRef = useRef<HTMLDivElement>(null)
 
+  const wsStatus = useSyncExternalStore(subscribeStatus, getStatusSnapshot)
+
   useEffect(() => {
-    const tryConnect = () => {
-      const rpc = getRpc()
-      if (rpc) {
-        counter.connect()
-        board.connect()
-      } else {
-        setTimeout(tryConnect, 500)
-      }
+    if (wsStatus === 'connected') {
+      counter.connect()
+      board.connect()
+    } else if (wsStatus === 'disconnected') {
+      counter.disconnect()
+      board.disconnect()
     }
-    tryConnect()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [wsStatus]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     reactionsEndRef.current?.scrollIntoView({ behavior: 'smooth' })

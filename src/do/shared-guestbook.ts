@@ -33,13 +33,7 @@ export interface ReactResult {
   instanceId: string
 }
 
-export interface ReactionBoardApi {
-  getReactions(): Reaction[]
-  react(name: string, emoji: string): ReactResult
-  subscribe(callback: ReactionBoardCallback): void
-}
-
-class ReactionBoardCapability extends RpcTarget implements ReactionBoardApi {
+export class ReactionBoardCapability extends RpcTarget {
   constructor(private host: SharedReactionBoardDO) {
     super()
   }
@@ -68,12 +62,7 @@ class ReactionBoardCapability extends RpcTarget implements ReactionBoardApi {
 
 // ── DO RPC root (matches demo's RootTarget pattern) ──
 
-export interface ReactionBoardRootApi {
-  getReactionBoard(): ReactionBoardApi
-  getInstanceId(): string
-}
-
-class ReactionBoardRpcRoot extends RpcTarget implements ReactionBoardRootApi {
+export class ReactionBoardRpcRoot extends RpcTarget {
   constructor(private host: SharedReactionBoardDO) {
     super()
   }
