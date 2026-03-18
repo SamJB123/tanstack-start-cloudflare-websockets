@@ -362,19 +362,39 @@ function MultiplexingPage() {
       </div>
 
       {/* Architecture diagram */}
-      <div className="max-w-3xl mx-auto mt-12 bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 text-center">
+      <div className="max-w-3xl mx-auto mt-12 bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 overflow-x-auto">
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6 text-center">
           Architecture
         </h3>
-        <pre className="text-gray-400 text-xs leading-relaxed text-center font-mono whitespace-pre">{`
-┌─────────────┐     capnweb RPC      ┌──────────────┐     capnweb RPC      ┌─────────────────┐
-│   Browser   │ ◄──── WebSocket ────► │   Worker     │ ◄──── WebSocket ────► │ SharedCounter   │
-│   (React)   │                       │  (proxy)     │                       │     (DO)        │
-│             │                       │              │ ◄──── WebSocket ────► │─────────────────│
-│             │                       │              │                       │ ReactionBoard   │
-└─────────────┘                       └──────────────┘                       │     (DO)        │
-                                                                             └─────────────────┘
-        `.trim()}</pre>
+        <div className="flex flex-col items-center gap-3 min-w-0">
+          {/* Browser */}
+          <div className="w-full max-w-xs bg-slate-700/40 border border-cyan-500/30 rounded-lg px-4 py-3 text-center">
+            <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Browser</div>
+            <div className="text-[11px] text-gray-500 mt-1">React + capnweb RPC session</div>
+          </div>
+
+          <div className="text-cyan-500/60 text-xs font-mono">&#x2195; WebSocket /api/ws</div>
+
+          {/* Worker */}
+          <div className="w-full max-w-xs bg-slate-700/40 border border-purple-500/30 rounded-lg px-4 py-3 text-center">
+            <div className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Worker</div>
+            <div className="text-[11px] text-gray-500 mt-1">CoreRpcRoot &middot; holds DO root stubs</div>
+          </div>
+
+          <div className="text-amber-500/60 text-xs font-mono">&#x2195; hibernating WebSockets</div>
+
+          {/* DOs */}
+          <div className="w-full max-w-xs flex gap-2">
+            <div className="flex-1 bg-slate-700/40 border border-amber-500/20 rounded-lg px-3 py-3 text-center">
+              <div className="text-xs font-semibold text-amber-400">Counter</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">DO</div>
+            </div>
+            <div className="flex-1 bg-slate-700/40 border border-amber-500/20 rounded-lg px-3 py-3 text-center">
+              <div className="text-xs font-semibold text-amber-400">Reactions</div>
+              <div className="text-[10px] text-gray-600 mt-0.5">DO</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
