@@ -62,8 +62,8 @@ function useSharedCounter() {
 
       await counter.subscribe(new Handler())
       setConnected(true)
-    } catch (e) {
-      console.error('[multiplexing] counter connect failed:', e)
+    } catch (e: any) {
+      console.error('[multiplexing] counter connect failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
@@ -74,7 +74,7 @@ function useSharedCounter() {
       setCount(result.count)
       setInstanceId(result.instanceId)
     } catch (e) {
-      console.error('[multiplexing] increment failed:', e)
+      console.error('[multiplexing] increment failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
@@ -85,7 +85,7 @@ function useSharedCounter() {
       setCount(result.count)
       setInstanceId(result.instanceId)
     } catch (e) {
-      console.error('[multiplexing] decrement failed:', e)
+      console.error('[multiplexing] decrement failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
@@ -123,7 +123,7 @@ function useReactionBoard() {
       await board.subscribe(new Handler())
       setConnected(true)
     } catch (e) {
-      console.error('[multiplexing] reaction board connect failed:', e)
+      console.error('[multiplexing] reaction board connect failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
@@ -134,7 +134,7 @@ function useReactionBoard() {
       const result = await boardRef.current.react(name, emoji)
       setInstanceId(result.instanceId)
     } catch (e) {
-      console.error('[multiplexing] react failed:', e)
+      console.error('[multiplexing] react failed:', e?.message ?? JSON.stringify(e, Object.getOwnPropertyNames(e ?? {})) ?? e)
     }
   }, [])
 
