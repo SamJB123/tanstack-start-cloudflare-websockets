@@ -61,7 +61,7 @@ function HomePage() {
               to="/multiplexing"
               icon={<Users className="w-6 h-6" />}
               title="DO Multiplexing"
-              description="Counter + guestbook with hibernation"
+              description="Counter + reactions with hibernation"
               color="amber"
             />
           </div>
@@ -141,7 +141,7 @@ function HomePage() {
                       <span className="text-amber-300">SharedCounterDO</span>
                     </div>
                     <div className="bg-slate-800/80 rounded-lg px-3 py-2 border border-amber-500/20">
-                      <span className="text-amber-300">SharedGuestbookDO</span>
+                      <span className="text-amber-300">SharedReactionBoardDO</span>
                     </div>
                     <div className="bg-slate-800/80 rounded-lg px-3 py-2 border border-emerald-500/20">
                       <span className="text-emerald-400">hibernation + capnweb RPC</span>
@@ -230,7 +230,7 @@ function RouteCard({
   return (
     <Link
       to={to}
-      className={`group bg-slate-800/50 border ${c.border} rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${c.shadow} flex flex-col`}
+      className={`group bg-slate-800 border ${c.border} rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${c.shadow} flex flex-col`}
     >
       <div className="flex items-center gap-3 mb-2">
         <div className={c.icon}>{icon}</div>

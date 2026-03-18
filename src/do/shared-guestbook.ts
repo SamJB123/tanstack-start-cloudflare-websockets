@@ -1,8 +1,8 @@
 /**
- * SharedGuestbook Durable Object.
- * Maintains a list of messages that multiple clients can post to.
+ * SharedReactionBoard Durable Object.
+ * Maintains a list of emoji reactions that multiple clients can post.
  * Uses hibernatable capnweb RPC so the DO can hibernate between interactions.
- * Broadcasts new entries to all connected clients via RPC callbacks.
+ * Broadcasts new reactions to all connected clients via RPC callbacks.
  */
 
 import { DurableObject } from 'cloudflare:workers'
@@ -15,71 +15,71 @@ import type { RpcStub } from 'capnweb-experimental-hibernation'
 
 // ── Types ──
 
-export interface GuestbookEntry {
+export interface Reaction {
   name: string
-  message: string
+  emoji: string
   timestamp: number
 }
 
-export interface GuestbookCallback {
-  onNewEntry(entry: GuestbookEntry): void
-  onSnapshot(entries: GuestbookEntry[]): void
+export interface ReactionBoardCallback {
+  onNewReaction(reaction: Reaction, instanceId: string): void
+  onSnapshot(reactions: Reaction[], instanceId: string): void
 }
 
-// ── Guestbook capability (child RpcTarget) ──
+// ── Reaction board capability (child RpcTarget) ──
 
-export interface GuestbookPostResult {
-  entry: GuestbookEntry
+export interface ReactResult {
+  reaction: Reaction
   instanceId: string
 }
 
-export interface GuestbookApi {
-  getEntries(): GuestbookEntry[]
-  post(name: string, message: string): GuestbookPostResult
-  subscribe(callback: GuestbookCallback): void
+export interface ReactionBoardApi {
+  getReactions(): Reaction[]
+  react(name: string, emoji: string): ReactResult
+  subscribe(callback: ReactionBoardCallback): void
 }
 
-class GuestbookCapability extends RpcTarget implements GuestbookApi {
-  constructor(private host: SharedGuestbookDO) {
+class ReactionBoardCapability extends RpcTarget implements ReactionBoardApi {
+  constructor(private host: SharedReactionBoardDO) {
     super()
   }
 
-  getEntries(): GuestbookEntry[] {
-    return this.host.entries
+  getReactions(): Reaction[] {
+    return this.host.reactions
   }
 
-  post(name: string, message: string): GuestbookPostResult {
-    const entry: GuestbookEntry = { name, message, timestamp: Date.now() }
-    this.host.entries.push(entry)
-    if (this.host.entries.length > 50) {
-      this.host.entries = this.host.entries.slice(-50)
+  react(name: string, emoji: string): ReactResult {
+    const reaction: Reaction = { name, emoji, timestamp: Date.now() }
+    this.host.reactions.push(reaction)
+    if (this.host.reactions.length > 100) {
+      this.host.reactions = this.host.reactions.slice(-100)
     }
-    this.host.broadcastNewEntry(entry)
+    this.host.broadcastNewReaction(reaction)
     this.host.schedulePersist()
-    return { entry, instanceId: this.host.instanceId }
+    return { reaction, instanceId: this.host.instanceId }
   }
 
-  subscribe(callback: RpcStub<GuestbookCallback>): void {
+  subscribe(callback: RpcStub<ReactionBoardCallback>): void {
     const duped = callback.dup()
     this.host.subscribers.add(duped)
-    duped.onSnapshot(this.host.entries)
+    duped.onSnapshot(this.host.reactions, this.host.instanceId)
   }
 }
 
 // ── DO RPC root (matches demo's RootTarget pattern) ──
 
-export interface GuestbookRootApi {
-  getGuestbook(): GuestbookApi
+export interface ReactionBoardRootApi {
+  getReactionBoard(): ReactionBoardApi
   getInstanceId(): string
 }
 
-class GuestbookRpcRoot extends RpcTarget implements GuestbookRootApi {
-  constructor(private host: SharedGuestbookDO) {
+class ReactionBoardRpcRoot extends RpcTarget implements ReactionBoardRootApi {
+  constructor(private host: SharedReactionBoardDO) {
     super()
   }
 
-  getGuestbook(): GuestbookCapability {
-    return new GuestbookCapability(this.host)
+  getReactionBoard(): ReactionBoardCapability {
+    return new ReactionBoardCapability(this.host)
   }
 
   getInstanceId(): string {
@@ -89,10 +89,10 @@ class GuestbookRpcRoot extends RpcTarget implements GuestbookRootApi {
 
 // ── Durable Object ──
 
-export class SharedGuestbookDO extends DurableObject {
+export class SharedReactionBoardDO extends DurableObject {
   instanceId = crypto.randomUUID()
-  entries: GuestbookEntry[] = []
-  subscribers = new Set<RpcStub<GuestbookCallback>>()
+  reactions: Reaction[] = []
+  subscribers = new Set<RpcStub<ReactionBoardCallback>>()
   private dirty = false
 
   private sessionStore: ReturnType<typeof __experimental_newDurableObjectSessionStore>
@@ -101,21 +101,21 @@ export class SharedGuestbookDO extends DurableObject {
 
   constructor(ctx: DurableObjectState, env: any) {
     super(ctx, env)
-    this.sessionStore = __experimental_newDurableObjectSessionStore(ctx.storage, 'guestbook:')
+    this.sessionStore = __experimental_newDurableObjectSessionStore(ctx.storage, 'reactions:')
     this.ready = this.init()
   }
 
   private async init() {
-    this.entries = ((await this.ctx.storage.get('entries')) as GuestbookEntry[]) ?? []
+    this.reactions = ((await this.ctx.storage.get('reactions')) as Reaction[]) ?? []
     for (const ws of this.ctx.getWebSockets('capnweb')) {
       await this.attachSession(ws)
     }
   }
 
-  broadcastNewEntry(entry: GuestbookEntry) {
+  broadcastNewReaction(reaction: Reaction) {
     for (const sub of this.subscribers) {
       try {
-        sub.onNewEntry(entry)
+        sub.onNewReaction(reaction, this.instanceId)
       } catch {
         this.subscribers.delete(sub)
       }
@@ -130,7 +130,7 @@ export class SharedGuestbookDO extends DurableObject {
 
   async alarm() {
     if (!this.dirty) return
-    await this.ctx.storage.put('entries', this.entries)
+    await this.ctx.storage.put('reactions', this.reactions)
     this.dirty = false
   }
 
@@ -183,7 +183,7 @@ export class SharedGuestbookDO extends DurableObject {
     const knownSessionId = this.getSessionId(ws)
     const session = await __experimental_newHibernatableWebSocketRpcSession(
       ws as any,
-      new GuestbookRpcRoot(this),
+      new ReactionBoardRpcRoot(this),
       {
         sessionStore: this.sessionStore,
         sessionId: knownSessionId,

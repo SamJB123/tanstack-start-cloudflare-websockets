@@ -21,7 +21,7 @@
 			},
 			{
 				"name": "SHARED_GUESTBOOK",
-				"class_name": "SharedGuestbookDO"
+				"class_name": "SharedReactionBoardDO"
 			}
 		]
 	},
@@ -29,6 +29,15 @@
 		{
 			"tag": "v1",
 			"new_sqlite_classes": ["SharedCounterDO", "SharedGuestbookDO"]
+		},
+		{
+			"tag": "v2",
+			"renamed_classes": [
+				{
+					"from": "SharedGuestbookDO",
+					"to": "SharedReactionBoardDO"
+				}
+			]
 		}
 	]
 	/**

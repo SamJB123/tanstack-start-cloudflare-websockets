@@ -15,7 +15,7 @@ import { newWebSocketRpcSession, type RpcStub } from 'capnweb-experimental-hiber
 import { recordTransport } from './transport-log'
 import type { DemoApi } from './demo-rpc'
 import type { CounterApi } from './do/shared-counter'
-import type { GuestbookApi } from './do/shared-guestbook'
+import type { ReactionBoardApi } from './do/shared-guestbook'
 
 export type WsStatus = 'connected' | 'connecting' | 'disconnected'
 
@@ -27,9 +27,7 @@ export type WsStatus = 'connected' | 'connecting' | 'disconnected'
 export interface ServerApi extends DemoApi {
   fetch(request: Request): Response
   connectCounter(roomId: string): CounterApi
-  connectGuestbook(roomId: string): GuestbookApi
-  getCounterInstanceId(roomId: string): string
-  getGuestbookInstanceId(roomId: string): string
+  connectReactionBoard(roomId: string): ReactionBoardApi
 }
 
 let ws: WebSocket | null = null

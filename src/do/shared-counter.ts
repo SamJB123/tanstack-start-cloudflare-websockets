@@ -16,7 +16,7 @@ import type { RpcStub } from 'capnweb-experimental-hibernation'
 // ── Client callback interface ──
 
 export interface CounterCallback {
-  onCountChanged(count: number): void
+  onCountChanged(count: number, instanceId: string): void
 }
 
 // ── Counter capability (child RpcTarget) ──
@@ -59,7 +59,7 @@ class CounterCapability extends RpcTarget implements CounterApi {
   subscribe(callback: RpcStub<CounterCallback>): void {
     const duped = callback.dup()
     this.host.subscribers.add(duped)
-    duped.onCountChanged(this.host.count)
+    duped.onCountChanged(this.host.count, this.host.instanceId)
   }
 }
 
@@ -112,7 +112,7 @@ export class SharedCounterDO extends DurableObject {
   broadcast() {
     for (const sub of this.subscribers) {
       try {
-        sub.onCountChanged(this.count)
+        sub.onCountChanged(this.count, this.instanceId)
       } catch {
         this.subscribers.delete(sub)
       }

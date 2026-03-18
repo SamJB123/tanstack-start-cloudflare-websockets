@@ -75,13 +75,13 @@ Browser                    Worker                     Durable Objects
 ├─────────────────────►│    alive)    │                     │   .getCounter()
 │                      │              │       capnweb RPC   │   .getInstanceId()
 │  client gets child   │  #doRoots ───┼──── WebSocket ────► │
-│  capability stubs    │              │                     SharedGuestbookDO
-│  proxied through     │              │                     ├─ GuestbookRpcRoot
-│  the worker          └──────────────┘                     │   .getGuestbook()
+│  capability stubs    │              │                     SharedReactionBoardDO
+│  proxied through     │              │                     ├─ ReactionBoardRpcRoot
+│  the worker          └──────────────┘                     │   .getReactionBoard()
 │                                                           │   .getInstanceId()
 │
 │  counter.increment()  ──►  worker proxies  ──►  CounterCapability.increment()
-│  guestbook.post(...)  ──►  worker proxies  ──►  GuestbookCapability.post(...)
+│  board.react(...)     ──►  worker proxies  ──►  ReactionBoardCapability.react(...)
 ```
 
 ### The pattern
@@ -139,7 +139,7 @@ The client doesn't know or care that calls are being proxied through the worker 
 - **Hibernation works**: The DO can sleep between interactions. When it wakes, the constructor re-runs (generating a new `instanceId`), but the capnweb session restores from the WebSocket attachment and held stubs continue to work.
 - **No manual bridging**: Unlike raw WebSocket approaches where you'd manually frame messages and translate between protocols, capnweb handles serialization, dispatch, and cross-session proxying automatically.
 - **Multiplexed**: A single browser WebSocket to the worker fans out to multiple DO WebSocket connections. Each DO is independent and can hibernate on its own schedule.
-- **Bidirectional**: DOs can push to clients via callbacks (e.g., `subscribe(callback)` for real-time counter updates and guestbook entries).
+- **Bidirectional**: DOs can push to clients via callbacks (e.g., `subscribe(callback)` for real-time counter updates and reactions).
 
 ### Hibernation detection
 
@@ -154,7 +154,7 @@ Each demo page showcases both transport types side by side, with transport badge
 | `/dice` | Compute roll statistics on the server | Roll dice on the worker |
 | `/ascii` | Fetch animal facts | Render ASCII art banners |
 | `/colors` | Analyze color properties (hue, saturation, lightness) | Generate creative color names |
-| `/multiplexing` | — | Shared counter + guestbook via two Durable Objects with hibernation |
+| `/multiplexing` | — | Shared counter + reaction board via two Durable Objects with hibernation |
 
 ## Project structure
 
@@ -172,10 +172,10 @@ src/
     dice.tsx             Dice roller demo
     ascii.tsx            ASCII art zoo demo
     colors.tsx           Color palette demo
-    multiplexing.tsx     DO multiplexing demo (counter + guestbook)
+    multiplexing.tsx     DO multiplexing demo (counter + reaction board)
   do/
     shared-counter.ts    SharedCounterDO with hibernatable capnweb RPC
-    shared-guestbook.ts  SharedGuestbookDO with hibernatable capnweb RPC
+    shared-guestbook.ts  SharedReactionBoardDO with hibernatable capnweb RPC
   components/
     Header.tsx           Nav header with WebSocket status indicator
     TransportBadge.tsx   Badge showing transport type + latency

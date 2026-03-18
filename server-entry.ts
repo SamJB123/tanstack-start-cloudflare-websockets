@@ -3,11 +3,11 @@ import { RpcTarget, newWorkersWebSocketRpcResponse, newWebSocketRpcSession } fro
 import type { RpcStub } from 'capnweb-experimental-hibernation'
 import { withDemoRpc } from './src/demo-rpc'
 import type { CounterApi, CounterRootApi } from './src/do/shared-counter'
-import type { GuestbookApi, GuestbookRootApi } from './src/do/shared-guestbook'
+import type { ReactionBoardApi, ReactionBoardRootApi } from './src/do/shared-guestbook'
 
 // Re-export DO classes so wrangler can find them
 export { SharedCounterDO } from './src/do/shared-counter'
-export { SharedGuestbookDO } from './src/do/shared-guestbook'
+export { SharedReactionBoardDO } from './src/do/shared-guestbook'
 
 // ── RPC root ──
 
@@ -54,28 +54,12 @@ class CoreRpcRoot extends RpcTarget {
     return root.getCounter()
   }
 
-  /** Connect to the shared guestbook DO. */
-  async connectGuestbook(roomId: string): Promise<RpcStub<GuestbookApi>> {
-    const root = await this.#getDoRoot<GuestbookRootApi>(
-      workerEnv!.SHARED_GUESTBOOK, roomId, `guestbook:${roomId}`,
+  /** Connect to the shared reaction board DO. */
+  async connectReactionBoard(roomId: string): Promise<RpcStub<ReactionBoardApi>> {
+    const root = await this.#getDoRoot<ReactionBoardRootApi>(
+      workerEnv!.SHARED_GUESTBOOK, roomId, `reactions:${roomId}`,
     )
-    return root.getGuestbook()
-  }
-
-  /** Get the counter DO's instance ID (changes when the DO hibernates and wakes). */
-  async getCounterInstanceId(roomId: string): Promise<string> {
-    const root = await this.#getDoRoot<CounterRootApi>(
-      workerEnv!.SHARED_COUNTER, roomId, `counter:${roomId}`,
-    )
-    return root.getInstanceId()
-  }
-
-  /** Get the guestbook DO's instance ID. */
-  async getGuestbookInstanceId(roomId: string): Promise<string> {
-    const root = await this.#getDoRoot<GuestbookRootApi>(
-      workerEnv!.SHARED_GUESTBOOK, roomId, `guestbook:${roomId}`,
-    )
-    return root.getInstanceId()
+    return root.getReactionBoard()
   }
 }
 
