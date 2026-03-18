@@ -53,9 +53,9 @@ These bypass TanStack Start entirely — capnweb handles serialization, dispatch
 
 - Opens a WebSocket to `/api/ws`
 - Creates a capnweb RPC session on the socket
-- Patches `globalThis.fetch` to prefer WebSocket for same-origin requests
 - Reconnects automatically on disconnect (1s delay)
-- Falls back to native HTTP when the socket isn't connected
+
+Server functions are routed over WebSocket via `wsFetch`, injected into TanStack Start's `createStart()` as `serverFns.fetch`. No `globalThis.fetch` patching is needed — TanStack Start's only client-side fetch calls are server functions, so the framework hook covers everything. Falls back to native HTTP when the socket isn't connected.
 
 ## Durable Object multiplexing with hibernation
 
@@ -162,7 +162,7 @@ Each demo page showcases both transport types side by side, with transport badge
 server-entry.ts          Cloudflare Worker entry; WebSocket upgrade + RPC root
 src/
   start.ts               TanStack Start config; injects wsFetch as server function transport
-  ws.ts                  WebSocket singleton; capnweb RPC session; global fetch patch
+  ws.ts                  WebSocket singleton; capnweb RPC session; wsFetch export
   transport-log.ts       Observable log of transport events (ws vs http) for UI
   demo-rpc.ts            Demo RPC method definitions + DemoApi type
   router.tsx             TanStack Router config

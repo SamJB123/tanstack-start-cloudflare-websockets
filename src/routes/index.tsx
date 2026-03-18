@@ -32,8 +32,44 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Route cards */}
+      <section className="px-6 pb-10 -mt-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <RouteCard
+              to="/dice"
+              icon={<Dices className="w-6 h-6" />}
+              title="Dice Roller"
+              description="Worker RPC + server functions"
+              color="cyan"
+            />
+            <RouteCard
+              to="/colors"
+              icon={<Palette className="w-6 h-6" />}
+              title="Color Palette"
+              description="Color naming + analysis"
+              color="purple"
+            />
+            <RouteCard
+              to="/ascii"
+              icon={<Terminal className="w-6 h-6" />}
+              title="ASCII Zoo"
+              description="ASCII art + animal facts"
+              color="emerald"
+            />
+            <RouteCard
+              to="/multiplexing"
+              icon={<Users className="w-6 h-6" />}
+              title="DO Multiplexing"
+              description="Counter + guestbook with hibernation"
+              color="amber"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Architecture diagram */}
-      <section className="px-6 pb-16 -mt-4">
+      <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto">
           <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-8 md:p-10">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-8 text-center">
@@ -52,8 +88,8 @@ function HomePage() {
                     <span className="text-cyan-400">capnweb RPC session</span>
                   </div>
                   <div className="bg-slate-800/80 rounded-lg px-3 py-2 border border-slate-600/40">
-                    <span className="text-gray-500">patched </span>
-                    <span className="text-gray-300 font-mono">globalThis.fetch</span>
+                    <span className="text-gray-300 font-mono">wsFetch</span>
+                    <span className="text-gray-500"> for server functions</span>
                   </div>
                 </div>
               </div>
@@ -145,46 +181,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Route cards */}
-      <section className="px-6 pb-20">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6 text-center">
-            Explore the demos
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <RouteCard
-              to="/dice"
-              icon={<Dices className="w-8 h-8" />}
-              title="Dice Roller"
-              description="Roll dice on the worker via capnweb RPC, compute stats via TanStack Start server functions. Both over the same WebSocket."
-              color="cyan"
-            />
-            <RouteCard
-              to="/colors"
-              icon={<Palette className="w-8 h-8" />}
-              title="Color Palette"
-              description="Generate creative color names via worker RPC, analyze hue/saturation via server functions. See transport badges on each call."
-              color="purple"
-            />
-            <RouteCard
-              to="/ascii"
-              icon={<Terminal className="w-8 h-8" />}
-              title="ASCII Zoo"
-              description="Render ASCII art banners on the worker, fetch animal facts from the server. Compare WebSocket vs HTTP latency."
-              color="emerald"
-            />
-            <RouteCard
-              to="/multiplexing"
-              icon={<Users className="w-8 h-8" />}
-              title="DO Multiplexing"
-              description="Shared counter and guestbook backed by two Durable Objects with hibernation. capnweb RPC on both legs, real-time sync across tabs."
-              color="amber"
-              featured
-            />
-          </div>
-        </div>
-      </section>
     </div>
   )
 }
@@ -195,14 +191,12 @@ function RouteCard({
   title,
   description,
   color,
-  featured,
 }: {
   to: string
   icon: React.ReactNode
   title: string
   description: string
   color: 'cyan' | 'purple' | 'emerald' | 'amber'
-  featured?: boolean
 }) {
   const colorMap = {
     cyan: {
@@ -210,28 +204,24 @@ function RouteCard({
       border: 'border-cyan-500/30 hover:border-cyan-500/60',
       shadow: 'hover:shadow-cyan-500/10',
       arrow: 'text-cyan-400 group-hover:text-cyan-300',
-      tag: 'bg-cyan-500/10 text-cyan-400',
     },
     purple: {
       icon: 'text-purple-400',
       border: 'border-purple-500/30 hover:border-purple-500/60',
       shadow: 'hover:shadow-purple-500/10',
       arrow: 'text-purple-400 group-hover:text-purple-300',
-      tag: 'bg-purple-500/10 text-purple-400',
     },
     emerald: {
       icon: 'text-emerald-400',
       border: 'border-emerald-500/30 hover:border-emerald-500/60',
       shadow: 'hover:shadow-emerald-500/10',
       arrow: 'text-emerald-400 group-hover:text-emerald-300',
-      tag: 'bg-emerald-500/10 text-emerald-400',
     },
     amber: {
       icon: 'text-amber-400',
       border: 'border-amber-500/30 hover:border-amber-500/60',
       shadow: 'hover:shadow-amber-500/10',
       arrow: 'text-amber-400 group-hover:text-amber-300',
-      tag: 'bg-amber-500/10 text-amber-400',
     },
   }
 
@@ -240,23 +230,16 @@ function RouteCard({
   return (
     <Link
       to={to}
-      className={`group relative bg-slate-800/50 border ${c.border} rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${c.shadow} flex flex-col ${featured ? 'md:col-span-2' : ''}`}
+      className={`group bg-slate-800/50 border ${c.border} rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${c.shadow} flex flex-col`}
     >
-      {featured && (
-        <span className={`absolute top-4 right-4 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${c.tag}`}>
-          New
-        </span>
-      )}
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-3 mb-2">
         <div className={c.icon}>{icon}</div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-white mb-1.5 flex items-center gap-2">
-            {title}
-            <ArrowRight size={16} className={`${c.arrow} transition-transform group-hover:translate-x-1`} />
-          </h3>
-          <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
-        </div>
+        <h3 className="text-sm font-semibold text-white flex items-center gap-1.5">
+          {title}
+          <ArrowRight size={14} className={`${c.arrow} transition-transform group-hover:translate-x-1`} />
+        </h3>
       </div>
+      <p className="text-gray-500 text-xs leading-relaxed">{description}</p>
     </Link>
   )
 }

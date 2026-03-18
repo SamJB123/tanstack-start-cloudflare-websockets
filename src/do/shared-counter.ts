@@ -10,8 +10,8 @@ import {
   RpcTarget,
   __experimental_newDurableObjectSessionStore,
   __experimental_newHibernatableWebSocketRpcSession,
-} from 'capnweb'
-import type { RpcStub } from 'capnweb'
+} from 'capnweb-experimental-hibernation'
+import type { RpcStub } from 'capnweb-experimental-hibernation'
 
 // ── Client callback interface ──
 

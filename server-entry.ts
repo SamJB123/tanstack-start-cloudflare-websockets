@@ -1,6 +1,6 @@
 import tanstackHandler from '@tanstack/react-start/server-entry'
-import { RpcTarget, newWorkersWebSocketRpcResponse, newWebSocketRpcSession } from 'capnweb'
-import type { RpcStub } from 'capnweb'
+import { RpcTarget, newWorkersWebSocketRpcResponse, newWebSocketRpcSession } from 'capnweb-experimental-hibernation'
+import type { RpcStub } from 'capnweb-experimental-hibernation'
 import { withDemoRpc } from './src/demo-rpc'
 import type { CounterApi, CounterRootApi } from './src/do/shared-counter'
 import type { GuestbookApi, GuestbookRootApi } from './src/do/shared-guestbook'
