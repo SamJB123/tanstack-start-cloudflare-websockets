@@ -1,6 +1,9 @@
 import tanstackHandler from '@tanstack/react-start/server-entry'
 import { RpcTarget, newWorkersWebSocketRpcResponse, newWebSocketRpcSession } from 'capnweb-experimental-hibernation'
+import type { RpcStub } from 'capnweb-experimental-hibernation'
 import { withDemoRpc } from './src/demo-rpc'
+import type { CounterCapability } from './src/do/shared-counter'
+import type { ReactionBoardCapability } from './src/do/shared-guestbook'
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -29,30 +32,41 @@ class CoreRpcRoot extends RpcTarget {
     return tanstackHandler.fetch(request, { context: workerEnv! })
   }
 
-  /** Open a WebSocket RPC session to a DO, caching for reuse. */
-  async #connectDo<T extends Rpc.DurableObjectBranded | undefined>(binding: DurableObjectNamespace<T>, roomId: string, key: string) {
+  /** Open a WebSocket to a DO and return the root stub, caching for reuse. */
+  async #getDoRoot(binding: DurableObjectNamespace<any>, roomId: string, key: string) {
     if (!this.#doRoots.has(key)) {
       const id = binding.idFromName(roomId)
-      const doRes = await binding.get(id).fetch('http://do/ws', {
+      const stub = binding.get(id)
+
+      const doRes = await stub.fetch('http://do/ws', {
         headers: { Upgrade: 'websocket' },
       })
       const doWs = doRes.webSocket
       if (!doWs) throw new Error(`DO did not return a WebSocket for ${key}`)
       doWs.accept()
+
       this.#doRoots.set(key, newWebSocketRpcSession(doWs))
     }
     return this.#doRoots.get(key)!
   }
 
-  /** Connect to the shared counter DO. */
-  async connectCounter(roomId: string) {
-    const root = await this.#connectDo(workerEnv!.SHARED_COUNTER, roomId, `counter:${roomId}`)
+  /**
+   * Connect to the shared counter DO.
+   * Worker gets root.getCounter() — a child RpcTarget — and passes it to
+   * the browser client. capnweb proxies calls through automatically.
+   */
+  async connectCounter(roomId: string): Promise<RpcStub<CounterCapability>> {
+    const root = await this.#getDoRoot(
+      workerEnv!.SHARED_COUNTER, roomId, `counter:${roomId}`,
+    )
     return root.getCounter()
   }
 
   /** Connect to the shared reaction board DO. */
-  async connectReactionBoard(roomId: string) {
-    const root = await this.#connectDo(workerEnv!.SHARED_GUESTBOOK, roomId, `reactions:${roomId}`)
+  async connectReactionBoard(roomId: string): Promise<RpcStub<ReactionBoardCapability>> {
+    const root = await this.#getDoRoot(
+      workerEnv!.SHARED_GUESTBOOK, roomId, `reactions:${roomId}`,
+    )
     return root.getReactionBoard()
   }
 }
@@ -60,7 +74,7 @@ class CoreRpcRoot extends RpcTarget {
 const RpcRoot = withDemoRpc(CoreRpcRoot)
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext) {
     workerEnv = env
     const url = new URL(request.url)
 
@@ -73,4 +87,3 @@ export default {
     return tanstackHandler.fetch(request, { context: env })
   },
 }
- 

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, ClientOnly } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { Hash, Smile, Users } from 'lucide-react'
 import { getRpc, getStatusSnapshot, subscribeStatus } from '../ws'
@@ -239,7 +239,7 @@ function MultiplexingPage() {
   const board = useReactionBoard()
   const reactionsEndRef = useRef<HTMLDivElement>(null)
 
-  const wsStatus = useSyncExternalStore(subscribeStatus, getStatusSnapshot)
+  const wsStatus = useSyncExternalStore(subscribeStatus, getStatusSnapshot, () => 'disconnected' as const)
 
   useEffect(() => {
     if (wsStatus === 'connected') {
@@ -255,8 +255,6 @@ function MultiplexingPage() {
     reactionsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [board.reactions])
 
-  const myName = typeof window !== 'undefined' ? getOrCreateName() : ''
-
   return (
     <div className="min-h-svh bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pt-20 px-6 pb-12">
       {/* Hero */}
@@ -267,11 +265,11 @@ function MultiplexingPage() {
           Two Durable Objects, both proxied through the worker via capnweb RPC.
           Open this page in multiple tabs to see real-time sync.
         </p>
-        {myName && (
+        <ClientOnly fallback={null}>
           <p className="text-gray-600 text-xs mt-2">
-            You are <span className="text-gray-400 font-medium">{myName}</span>
+            You are <span className="text-gray-400 font-medium">{getOrCreateName()}</span>
           </p>
-        )}
+        </ClientOnly>
       </div>
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
