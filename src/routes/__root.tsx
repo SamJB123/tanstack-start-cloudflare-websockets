@@ -3,8 +3,14 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import Header from '../components/Header'
+import { initSocket } from '../ws'
 
 import appCss from '../styles.css?url'
+
+// Start the WebSocket connection once on the client
+if (typeof window !== 'undefined') {
+  initSocket()
+}
 
 export const Route = createRootRoute({
   head: () => ({

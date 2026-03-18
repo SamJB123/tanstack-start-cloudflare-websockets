@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
 
 import { useState } from 'react'
-import { Home, Menu, X } from 'lucide-react'
+import { Home, Menu, X, Dices, Palette, Terminal } from 'lucide-react'
+import WsStatusIndicator from './WsStatus'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -25,6 +26,9 @@ export default function Header() {
             />
           </Link>
         </h1>
+        <div className="ml-auto">
+          <WsStatusIndicator />
+        </div>
       </header>
 
       <aside
@@ -57,9 +61,42 @@ export default function Header() {
             <span className="font-medium">Home</span>
           </Link>
 
-          {/* Demo Links Start */}
-
-          {/* Demo Links End */}
+          <Link
+            to="/dice"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <Dices size={20} />
+            <span className="font-medium">Dice Roller</span>
+          </Link>
+          <Link
+            to="/colors"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <Palette size={20} />
+            <span className="font-medium">Color Palette</span>
+          </Link>
+          <Link
+            to="/ascii"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <Terminal size={20} />
+            <span className="font-medium">ASCII Zoo</span>
+          </Link>
         </nav>
       </aside>
     </>
