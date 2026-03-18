@@ -8,30 +8,36 @@ Both TanStack Start **server functions** (`createServerFn`) and custom **worker 
 
 ### Architecture
 
-```
-Browser                          Cloudflare Worker
-──────                          ─────────────────
-                                 server-entry.ts
-globalThis.fetch ──┐                   │
-  (patched)        │             ┌─────┴──────┐
-                   ▼             ▼             ▼
-              ┌─────────┐   CoreRpcRoot    DemoRpc
-              │ capnweb  │   .fetch()      .rollDice()
-              │   RPC    │      │          .banner()
-              │ session  │◄─────┤          .nameColors()
-              └────┬─────┘      │              ...
-                   │            ▼
-                WebSocket   tanstackHandler
-               /api/ws       .fetch()
+```mermaid
+graph LR
+    subgraph Browser
+        A[React App] --> B[capnweb RPC session]
+        B --> C[wsFetch]
+    end
+
+    B <-->|WebSocket /api/ws| D
+
+    subgraph Worker["Cloudflare Worker"]
+        D[CoreRpcRoot] --> E[TanStack Start handler]
+        D --> F[DemoRpc methods]
+        D --> G["#doRoots (DO sessions)"]
+    end
+
+    G <-->|"hibernating WebSocket"| H
+    G <-->|"hibernating WebSocket"| I
+
+    subgraph DOs["Durable Objects"]
+        H[SharedCounterDO]
+        I[SharedReactionBoardDO]
+    end
 ```
 
 ### Server functions over WebSocket
 
-TanStack Start server functions normally make HTTP fetch requests to endpoints like `POST /rsc/__ACTIONS_0`. This starter reroutes them over WebSocket in three layers:
+TanStack Start server functions normally make HTTP fetch requests to endpoints like `POST /rsc/__ACTIONS_0`. This starter reroutes them over WebSocket in two layers:
 
-1. **`src/ws.ts`** — Patches `globalThis.fetch` so all same-origin requests go through the capnweb RPC session's `fetch()` method instead of HTTP
-2. **`src/start.ts`** — Injects a `wsFetch` function into TanStack Start's `createStart()` via the `serverFns.fetch` option (the framework's official hook for custom transport)
-3. **`server-entry.ts`** — The `CoreRpcRoot` class exposes a `fetch(request): Response` method that forwards incoming requests to `tanstackHandler.fetch()`, which is the standard TanStack Start SSR handler
+1. **`src/start.ts`** — Injects `wsFetch` into TanStack Start's `createStart()` via the `serverFns.fetch` option (the framework's official hook for custom transport). No `globalThis.fetch` patching is needed.
+2. **`server-entry.ts`** — The `CoreRpcRoot` class exposes a `fetch(request): Response` method that forwards incoming requests to `tanstackHandler.fetch()`, which is the standard TanStack Start SSR handler.
 
 The result: `createServerFn` calls are serialized as `Request` objects, sent over the WebSocket as capnweb RPC calls to `CoreRpcRoot.fetch()`, processed by TanStack Start on the worker, and the `Response` comes back over the same socket. App code doesn't need to know any of this — server functions just work.
 
@@ -55,7 +61,7 @@ These bypass TanStack Start entirely — capnweb handles serialization, dispatch
 - Creates a capnweb RPC session on the socket
 - Reconnects automatically on disconnect (1s delay)
 
-Server functions are routed over WebSocket via `wsFetch`, injected into TanStack Start's `createStart()` as `serverFns.fetch`. No `globalThis.fetch` patching is needed — TanStack Start's only client-side fetch calls are server functions, so the framework hook covers everything. Falls back to native HTTP when the socket isn't connected.
+Server functions are routed over WebSocket via `wsFetch`, injected into TanStack Start's `createStart()` as `serverFns.fetch`. Falls back to native HTTP when the socket isn't connected.
 
 ## Durable Object multiplexing with hibernation
 
@@ -63,30 +69,36 @@ The `/multiplexing` route demonstrates how to proxy capnweb RPC connections from
 
 ### Architecture
 
-```
-Browser                    Worker                     Durable Objects
-──────                     ──────                     ───────────────
+```mermaid
+sequenceDiagram
+    participant Client as Browser
+    participant Worker as Cloudflare Worker
+    participant Counter as SharedCounterDO
+    participant Reactions as SharedReactionBoardDO
 
-                       ┌──────────────┐
-                       │  CoreRpcRoot  │
-                       │              │       capnweb RPC
-  capnweb RPC          │  #doRoots ───┼──── WebSocket ────► SharedCounterDO
-  over WebSocket       │   (kept      │                     ├─ CounterRpcRoot
-├─────────────────────►│    alive)    │                     │   .getCounter()
-│                      │              │       capnweb RPC   │   .getInstanceId()
-│  client gets child   │  #doRoots ───┼──── WebSocket ────► │
-│  capability stubs    │              │                     SharedReactionBoardDO
-│  proxied through     │              │                     ├─ ReactionBoardRpcRoot
-│  the worker          └──────────────┘                     │   .getReactionBoard()
-│                                                           │   .getInstanceId()
-│
-│  counter.increment()  ──►  worker proxies  ──►  CounterCapability.increment()
-│  board.react(...)     ──►  worker proxies  ──►  ReactionBoardCapability.react(...)
+    Client->>Worker: connectCounter("room")
+    Worker->>Counter: WebSocket + capnweb session
+    Counter-->>Worker: root stub
+    Worker->>Counter: root.getCounter()
+    Counter-->>Worker: CounterCapability stub
+    Worker-->>Client: proxied child stub
+
+    Client->>Worker: counter.increment()
+    Worker->>Counter: proxied → CounterCapability.increment()
+    Counter-->>Worker: { count, instanceId }
+    Worker-->>Client: proxied result
+
+    Note over Counter: DO hibernates after idle
+
+    Client->>Worker: counter.increment()
+    Worker->>Counter: wake + restore session
+    Counter-->>Worker: { count, newInstanceId }
+    Worker-->>Client: proxied result (ID changed = hibernation worked!)
 ```
 
 ### The pattern
 
-This follows the same approach used in the [capnweb hibernation tests](https://github.com/niccolozy/capnweb), where a client holds a root stub and acquires child capability stubs from it. The difference here is that the **worker** is the client to the DO, and the browser client receives the child stubs proxied through the worker.
+This follows the same approach used in the [capnweb hibernation tests]([https://github.com/niccolozy/capnweb](https://github.com/SamJB123/capnweb-experiments/tree/hibernation)), where a client holds a root stub and acquires child capability stubs from it. The difference here is that the **worker** is the client to the DO, and the browser client receives the child stubs proxied through the worker.
 
 **1. DO exposes a root with child capabilities**
 
