@@ -1,19 +1,28 @@
 /**
  * Module-level WebSocket singleton with capnweb RPC layered on top.
  * Lives outside React lifecycle so it survives route changes.
+ * Call initSocket() from Tanstack Start's base route (src/routes/__root.tsx).
+ *
+ * Provides:
+ * - Auto-connecting WebSocket with reconnect
+ * - capnweb RPC session layered on the socket
+ * - Patched globalThis.fetch to route same-origin requests over WebSocket
+ * - Reactive status for UI (useSyncExternalStore-compatible)
  */
 
 import { newWebSocketRpcSession, type RpcStub } from 'capnweb'
+import { recordTransport } from './transport-log'
+import type { DemoApi } from './demo-rpc'
 
 export type WsStatus = 'connected' | 'connecting' | 'disconnected'
 
-export interface ServerApi {
-  hello(name: string): string
-  ping(): string
-  rollDice(count: number): number[]
-  nameColor(hex: string): string
-  nameColors(hexes: string[]): string[]
-  banner(text: string): string
+/**
+ * The server's RPC interface.
+ * `fetch` is the core method that forwards requests to TanStack Start.
+ * Extend with your app's own RPC methods.
+ */
+export interface ServerApi extends DemoApi {
+  fetch(request: Request): Response
 }
 
 let ws: WebSocket | null = null
@@ -41,21 +50,15 @@ function connect() {
   }
 
   const url = getWsUrl()
-  console.log('[ws] connecting to', url)
   ws = new WebSocket(url)
   setStatus('connecting')
 
   ws.addEventListener('open', () => {
-    console.log('[ws] connected')
     setStatus('connected')
-
-    // Layer capnweb RPC on top of the open WebSocket
     rpc = newWebSocketRpcSession<ServerApi>(ws!)
-    console.log('[ws] capnweb RPC session created')
   })
 
   ws.addEventListener('close', () => {
-    console.log('[ws] disconnected, reconnecting...')
     rpc = null
     ws = null
     setStatus('disconnected')
@@ -85,11 +88,45 @@ export function getRpc(): RpcStub<ServerApi> | null {
   return rpc
 }
 
-/** Start the connection. Call once from your app's client entry. */
+/** Start the connection and patch global fetch. Call once from your app's client entry. */
 export function initSocket(): void {
   if (typeof window !== 'undefined') {
     connect()
+    patchGlobalFetch()
   }
+}
+
+const nativeFetch = globalThis.fetch
+
+function patchGlobalFetch() {
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init)
+    const isSameOrigin = request.url.startsWith(window.location.origin)
+
+    if (rpc && isSameOrigin) {
+      recordTransport('websocket', request.url)
+      return rpc.fetch(request)
+    }
+
+    recordTransport('http', request.url)
+    return nativeFetch(input, init)
+  }
+}
+
+/**
+ * Custom fetch that routes requests over the WebSocket RPC connection
+ * instead of making a new HTTP request. Falls back to native fetch
+ * if the WebSocket isn't connected.
+ */
+export const wsFetch: typeof globalThis.fetch = async (input, init) => {
+  if (rpc) {
+    const request = new Request(input, init)
+    recordTransport('websocket', request.url)
+    return rpc.fetch(request)
+  }
+  const request = new Request(input, init)
+  recordTransport('http', request.url)
+  return nativeFetch(input, init)
 }
 
 /** useSyncExternalStore-compatible snapshot. */

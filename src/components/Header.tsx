@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Home, Menu, X, Dices, Palette, Terminal } from 'lucide-react'
 import WsStatusIndicator from './WsStatus'
+import TransportIndicator from './TransportIndicator'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -26,7 +27,8 @@ export default function Header() {
             />
           </Link>
         </h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <TransportIndicator />
           <WsStatusIndicator />
         </div>
       </header>
