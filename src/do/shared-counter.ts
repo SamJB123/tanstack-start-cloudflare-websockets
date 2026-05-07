@@ -8,6 +8,8 @@
 import { DurableObject } from 'cloudflare:workers'
 import {
   RpcTarget,
+  __experimental_cleanupOrphanedSessions,
+  __experimental_hibernatableWebSocketSessionId,
   __experimental_newDurableObjectSessionStore,
   __experimental_newHibernatableWebSocketRpcSession,
 } from 'capnweb-experimental-hibernation'
@@ -92,7 +94,9 @@ export class SharedCounterDO extends DurableObject {
 
   private async init() {
     this.count = ((await this.ctx.storage.get('count')) as number) ?? 0
-    for (const ws of this.ctx.getWebSockets('capnweb')) {
+    const sockets = this.ctx.getWebSockets('capnweb')
+    await __experimental_cleanupOrphanedSessions(sockets, this.sessionStore)
+    for (const ws of sockets) {
       await this.attachSession(ws)
     }
   }
@@ -145,7 +149,7 @@ export class SharedCounterDO extends DurableObject {
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
     await this.ready
-    const sid = this.getSessionId(ws)
+    const sid = __experimental_hibernatableWebSocketSessionId(ws)
     const session = sid ? this.sessions.get(sid) : undefined
     session?.handleClose(code, reason, wasClean)
     if (sid) this.sessions.delete(sid)
@@ -153,21 +157,21 @@ export class SharedCounterDO extends DurableObject {
 
   async webSocketError(ws: WebSocket, error: unknown) {
     await this.ready
-    const sid = this.getSessionId(ws)
+    const sid = __experimental_hibernatableWebSocketSessionId(ws)
     const session = sid ? this.sessions.get(sid) : undefined
     session?.handleError(error)
   }
 
   private async getOrAttachSession(ws: WebSocket) {
-    const sid = this.getSessionId(ws)
+    const sid = __experimental_hibernatableWebSocketSessionId(ws)
     if (sid && this.sessions.has(sid)) return this.sessions.get(sid)
     return this.attachSession(ws)
   }
 
   private async attachSession(ws: WebSocket) {
-    const knownSessionId = this.getSessionId(ws)
+    const knownSessionId = __experimental_hibernatableWebSocketSessionId(ws)
     const session = await __experimental_newHibernatableWebSocketRpcSession(
-      ws as any,
+      ws,
       new CounterRpcRoot(this),
       {
         sessionStore: this.sessionStore,
@@ -179,13 +183,5 @@ export class SharedCounterDO extends DurableObject {
       this.sessions.set(session.sessionId, session)
     }
     return session
-  }
-
-  private getSessionId(ws: WebSocket): string | undefined {
-    const attachment = (ws as any).deserializeAttachment?.()
-    if (attachment && attachment.version === 1 && typeof attachment.sessionId === 'string') {
-      return attachment.sessionId
-    }
-    return undefined
   }
 }

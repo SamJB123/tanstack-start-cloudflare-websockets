@@ -33,7 +33,7 @@ class CoreRpcRoot extends RpcTarget {
   }
 
   /** Open a WebSocket to a DO and return the root stub, caching for reuse. */
-  async #getDoRoot(binding: DurableObjectNamespace<any>, roomId: string, key: string) {
+  async #getDoRoot(binding: DurableObjectNamespace, roomId: string, key: string) {
     if (!this.#doRoots.has(key)) {
       const id = binding.idFromName(roomId)
       const stub = binding.get(id)
